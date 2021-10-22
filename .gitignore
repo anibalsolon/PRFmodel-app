@@ -1,0 +1,4 @@
+config.json
+*.nii.gz
+*.gii
+*.gii.gz
