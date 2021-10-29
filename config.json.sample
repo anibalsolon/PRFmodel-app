@@ -1,0 +1,6 @@
+{
+    "bold": "task-prf_bold.nii.gz",
+    "events": "events.tsv",
+    "stim": "stim.nii.gz",
+    "stimulus_diameter": 20.0
+}

@@ -1,0 +1,64 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=16
+#PBS -l vmem=50gb
+#PBS -l walltime=00:30:00
+
+set -xe
+
+BOLD=$(jq -r .bold config.json)
+EVENTS=$(jq -r .events config.json)
+STIM=$(jq -r .stim config.json)
+
+BOLD_EXT=$([[ "$BOLD" == *".nii.gz" ]] && echo "nii.gz" || echo "nii")
+STIM_EXT=$([[ "$STIM" == *".nii.gz" ]] && echo "nii.gz" || echo "nii")
+
+SUB=$(jq -r '._inputs[0].meta.subject' config.json)
+SES=$(jq -r '._inputs[0].meta.session // "1"' config.json)
+
+echo $SUB
+echo $SES
+
+rm -Rf input/BIDS
+mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func input/BIDS/stimuli
+cp $BOLD input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_bold.${BOLD_EXT}
+cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_apertures.${STIM_EXT}
+cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_bold.${STIM_EXT}
+
+awk \
+    -v file=sub-${SUB}_ses-${SES}_task-prf_bold.${BOLD_EXT} \
+    -v column=stim_file \
+    -f tsv.awk \
+    $EVENTS > input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
+
+
+cat << EOF > input/config.json
+{
+    "subjectName": "${SUB}",
+    "sessionName": "${SES}",
+    "solver":      "vista",
+    "options": {
+        "model":    "one gaussian",
+        "wsearch":  "coarse to fine",
+        "detrend":  1,
+        "grid":     false,
+        "keepAllPoints": true
+    }
+}
+EOF
+
+rm -Rf prf output
+
+time singularity run -e \
+    -B `pwd`/input:/flywheel/v0/input \
+    -B `pwd`/output:/flywheel/v0/output \
+    docker://garikoitz/prfanalyze-vista:latest \
+    --verbose
+
+# TODO map outputs
+# mkdir prf
+# mv output/BIDS/derivatives/prfanalyze-*/sub-${SUB}/ses-${SES}/*_r2.nii.gz prf/r2.nii.gz
+# r2.nii.gz
+# polarAngle.nii.gz
+# eccentricity.nii.gz
+# rfWidth.nii.gz
+# varea.nii.gz
