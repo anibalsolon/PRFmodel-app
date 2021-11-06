@@ -9,6 +9,8 @@ BOLD=$(jq -r .bold config.json)
 EVENTS=$(jq -r .events config.json)
 STIM=$(jq -r .stim config.json)
 
+STIM_DIAM=$(jq -r .stimulus_diameter config.json)
+
 BOLD_EXT=$([[ "$BOLD" == *".nii.gz" ]] && echo "nii.gz" || echo "nii")
 STIM_EXT=$([[ "$STIM" == *".nii.gz" ]] && echo "nii.gz" || echo "nii")
 
@@ -20,12 +22,12 @@ echo $SES
 
 rm -Rf input/BIDS
 mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func input/BIDS/stimuli
-cp $BOLD input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_bold.${BOLD_EXT}
-cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_apertures.${STIM_EXT}
-cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_bold.${STIM_EXT}
+cp $BOLD input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT}
+cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_apertures.${STIM_EXT}
+cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${STIM_EXT}
 
 awk \
-    -v file=sub-${SUB}_ses-${SES}_task-prf_bold.${BOLD_EXT} \
+    -v file=../sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT} \
     -v column=stim_file \
     -f tsv.awk \
     $EVENTS > input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
@@ -36,17 +38,34 @@ cat << EOF > input/config.json
     "subjectName": "${SUB}",
     "sessionName": "${SES}",
     "solver":      "vista",
+    "isPRFSynthData": false,
     "options": {
         "model":    "one gaussian",
         "wsearch":  "coarse to fine",
         "detrend":  1,
         "grid":     false,
         "keepAllPoints": true
+    },
+    "stimulus": {
+        "stimulus_diameter": "${STIM_DIAM}",
+        "fieldofviewHorz": 200,
+        "fieldofviewVert": 200,
+        "expName": "001",
+        "Binary": true,
+        "Resize": false,
+        "ResizedHorz": 0,
+        "ResizedVert": 0,
+        "barWidth": 2,
+        "durationSecs": 200,
+        "frameduration": 4,
+        "Shuffle": false,
+        "shuffleSeed": 12345
     }
 }
 EOF
 
 rm -Rf prf output
+mkdir -p output
 
 time singularity run -e \
     -B `pwd`/input:/flywheel/v0/input \
