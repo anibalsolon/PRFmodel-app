@@ -43,7 +43,9 @@ fi
 awk \
     -v stim_file=../sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT} \
     -f tsv.awk \
-    $EVENTS > $EVENTS.new
+    $EVENTS > ./events.tsv
+
+EVENTS=./events.tsv
 
 cat << EOF > input/config.json
 {
