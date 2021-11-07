@@ -81,7 +81,7 @@ cat << EOF > input/config.json
 EOF
 
 rm -Rf prf output
-mkdir -p output
+mkdir -p output running
 
 time singularity run -e \
     -B `pwd`/input:/flywheel/v0/input \
