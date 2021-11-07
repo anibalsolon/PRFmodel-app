@@ -34,9 +34,9 @@ then
     cp $EVENTS ./events.tsv
 else
     TRS=$(
-        singularity run -e \
+        singularity exec \
             docker://garikoitz/prfanalyze-afni:latest \
-            3dinfo -nt $BOLD
+            /opt/afni/3dinfo -nt $BOLD
     )
     echo "stim_file_index\tonset\tduration\tstim_file" > $EVENTS_FILE
     seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> ./events.tsv
