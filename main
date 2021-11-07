@@ -6,7 +6,7 @@
 set -xe
 
 BOLD=$(jq -r .bold config.json)
-EVENTS=$(jq -r .events config.json)
+EVENTS=$(jq -r '.events // ""' config.json)
 STIM=$(jq -r .stim config.json)
 
 STIM_DIAM=$(jq -r .stimulus_diameter config.json)
@@ -26,12 +26,24 @@ cp $BOLD input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_ac
 cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_apertures.${STIM_EXT}
 cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${STIM_EXT}
 
-awk \
-    -v file=../sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT} \
-    -v column=stim_file \
-    -f tsv.awk \
-    $EVENTS > input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
+mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func
+EVENTS_FILE=input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
 
+if [ -z "$EVENTS" ]
+then
+    TRS=$(
+        singularity run -e \
+            docker://garikoitz/prfanalyze-afni:latest \
+            3dinfo -nt $BOLD
+    )
+    echo "stim_file_index\tonset\tduration\tstim_file" > $EVENTS_FILE
+    seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> "events.tsv"
+fi
+
+awk \
+    -v stim_file=../sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT} \
+    -f tsv.awk \
+    $EVENTS > $EVENTS.new
 
 cat << EOF > input/config.json
 {
