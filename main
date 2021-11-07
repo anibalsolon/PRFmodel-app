@@ -33,12 +33,13 @@ if [ -s "$EVENTS" ]
 then
     cp $EVENTS ./events.tsv
 else
-    TRS=$(
-        singularity exec \
-            docker://garikoitz/prfanalyze-afni:latest \
-            /opt/afni/3dinfo -nt $BOLD
-    )
-    echo "stim_file_index\tonset\tduration\tstim_file" > $EVENTS_FILE
+    # TRS=$(
+    #     singularity exec \
+    #         docker://garikoitz/prfanalyze-afni:latest \
+    #         /opt/afni/3dinfo -nt $BOLD
+    # )
+    TRS=1800
+    echo "stim_file_index\tonset\tduration\tstim_file" > ./events.tsv
     seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> ./events.tsv
 fi
 
@@ -46,8 +47,7 @@ EVENTS=./events.tsv
 awk \
     -v stim_file=../sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT} \
     -f tsv.awk \
-    $EVENTS > ./events_new.tsv
-mv ./events_new.tsv ./events.tsv
+    $EVENTS > $EVENTS_FILE
 
 cat << EOF > input/config.json
 {
