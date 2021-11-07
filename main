@@ -29,8 +29,10 @@ cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold
 mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func
 EVENTS_FILE=input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
 
-if [ -z "$EVENTS" ] && [ ! -s "$EVENTS" ]
+if [ -s "$EVENTS" ]
 then
+    cp $EVENTS ./events.tsv
+else
     TRS=$(
         singularity run -e \
             docker://garikoitz/prfanalyze-afni:latest \
@@ -38,8 +40,6 @@ then
     )
     echo "stim_file_index\tonset\tduration\tstim_file" > $EVENTS_FILE
     seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> ./events.tsv
-else   
-    cp $EVENTS ./events.tsv
 fi
 
 EVENTS=./events.tsv
