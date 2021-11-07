@@ -37,15 +37,17 @@ then
             3dinfo -nt $BOLD
     )
     echo "stim_file_index\tonset\tduration\tstim_file" > $EVENTS_FILE
-    seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> "events.tsv"
+    seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> ./events.tsv
+else   
+    cp $EVENTS ./events.tsv
 fi
 
+EVENTS=./events.tsv
 awk \
     -v stim_file=../sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT} \
     -f tsv.awk \
-    $EVENTS > ./events.tsv
-
-EVENTS=./events.tsv
+    $EVENTS > ./events_new.tsv
+mv ./events_new.tsv ./events.tsv
 
 cat << EOF > input/config.json
 {
