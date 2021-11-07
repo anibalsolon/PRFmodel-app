@@ -39,7 +39,7 @@ else
     #         /opt/afni/3dinfo -nt $BOLD
     # )
     TRS=1800
-    echo "stim_file_index\tonset\tduration\tstim_file" > ./events.tsv
+    echo -e "stim_file_index\tonset\tduration\tstim_file" > ./events.tsv
     seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> ./events.tsv
 fi
 
