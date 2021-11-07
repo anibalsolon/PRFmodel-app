@@ -29,7 +29,7 @@ cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold
 mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func
 EVENTS_FILE=input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
 
-if [ -z "$EVENTS" ]
+if [ -z "$EVENTS" ] && [ ! -s "$EVENTS" ]
 then
     TRS=$(
         singularity run -e \
