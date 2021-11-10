@@ -72,8 +72,8 @@ cat << EOF > input/config.json
         "ResizedHorz": 0,
         "ResizedVert": 0,
         "barWidth": 2,
-        "durationSecs": 200,
-        "frameduration": 4,
+        "durationSecs": 1800,
+        "frameduration": 1,
         "Shuffle": false,
         "shuffleSeed": 12345
     }
