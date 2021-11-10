@@ -49,6 +49,30 @@ awk \
     -f tsv.awk \
     $EVENTS > $EVENTS_FILE
 
+INPUT_CONFIG="[]"
+for i in $(seq 1 $TRS)
+do
+    INPUT_CONFIG=$(echo $INPUT_CONFIG | jq '. + [{"TR": 1.0, "Stimulus": {"fieldofviewHorz": 200,"fieldofviewVert": 200}}]')
+done
+# echo $INPUT_CONFIG > input/config.json
+# {
+#     "subjectName": "${SUB}",
+#     "sessionName": "${SES}",
+#     "solver":      "vista",
+#     "isPRFSynthData": false,
+#     "options": {
+#         "model":    "one gaussian",
+#         "wsearch":  "coarse to fine",
+#         "detrend":  1,
+#         "grid":     false,
+#         "keepAllPoints": true
+#     },
+#     "stimulus": {
+#         "fieldofviewHorz": 200,
+#         "fieldofviewVert": 200,
+#     }
+# }
+
 cat << EOF > input/config.json
 {
     "subjectName": "${SUB}",
@@ -63,19 +87,7 @@ cat << EOF > input/config.json
         "keepAllPoints": true
     },
     "stimulus": {
-        "stimulus_diameter": "${STIM_DIAM}",
-        "fieldofviewHorz": 200,
-        "fieldofviewVert": 200,
-        "expName": "001",
-        "Binary": true,
-        "Resize": false,
-        "ResizedHorz": 0,
-        "ResizedVert": 0,
-        "barWidth": 2,
-        "durationSecs": 1800,
-        "frameduration": 1,
-        "Shuffle": false,
-        "shuffleSeed": 12345
+      "stimuli": ${INPUT_CONFIG}
     }
 }
 EOF
@@ -87,7 +99,8 @@ time singularity run -e \
     -B `pwd`/input:/flywheel/v0/input \
     -B `pwd`/output:/flywheel/v0/output \
     -B `pwd`/running:/running \
-    docker://anibalsolon/prfanalyze-vista:latest \
+    -B `pwd`/run.py:/scripts/run_popeye.py \
+    docker://garikoitz/prfanalyze-popeye:latest \
     --verbose
 
 # TODO map outputs
