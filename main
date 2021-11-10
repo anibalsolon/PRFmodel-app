@@ -24,7 +24,7 @@ rm -Rf input/BIDS
 mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func input/BIDS/stimuli
 cp $BOLD input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT}
 cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_apertures.${STIM_EXT}
-cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${STIM_EXT}
+# cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${STIM_EXT}
 
 mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func
 EVENTS_FILE=input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
