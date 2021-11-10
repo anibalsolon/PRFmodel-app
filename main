@@ -87,7 +87,7 @@ time singularity run -e \
     -B `pwd`/input:/flywheel/v0/input \
     -B `pwd`/output:/flywheel/v0/output \
     -B `pwd`/running:/running \
-    docker://garikoitz/prfanalyze-vista:latest \
+    docker://anibalsolon/prfanalyze-vista:latest \
     --verbose
 
 # TODO map outputs
