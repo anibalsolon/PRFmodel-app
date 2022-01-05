@@ -2,3 +2,5 @@ config.json
 *.nii
 *.nii.gz
 *.gii
+input
+output

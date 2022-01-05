@@ -9,105 +9,57 @@ BOLD=$(jq -r .bold config.json)
 EVENTS=$(jq -r '.events // ""' config.json)
 STIM=$(jq -r .stim config.json)
 
-STIM_DIAM=$(jq -r .stimulus_diameter config.json)
-
-BOLD_EXT=$([[ "$BOLD" == *".nii.gz" ]] && echo "nii.gz" || echo "nii")
-STIM_EXT=$([[ "$STIM" == *".nii.gz" ]] && echo "nii.gz" || echo "nii")
-
 SUB=$(jq -r '._inputs[0].meta.subject' config.json)
 SES=$(jq -r '._inputs[0].meta.session // "1"' config.json)
 
 echo $SUB
 echo $SES
 
-rm -Rf input/BIDS
-mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func input/BIDS/stimuli
-cp $BOLD input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT}
-cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_apertures.${STIM_EXT}
-# cp $STIM input/BIDS/stimuli/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${STIM_EXT}
+rm -Rf output
+mkdir output
 
-mkdir -p input/BIDS/sub-${SUB}/ses-${SES}/func
-EVENTS_FILE=input/BIDS/sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_events.tsv
+CPUS=$(grep 'cpu cores' /proc/cpuinfo | uniq | sed -re 's/cpu cores\s*:\s*([0-9]+)/\1/')
 
-if [ -s "$EVENTS" ]
-then
-    cp $EVENTS ./events.tsv
-else
-    # TRS=$(
-    #     singularity exec \
-    #         docker://garikoitz/prfanalyze-afni:latest \
-    #         /opt/afni/3dinfo -nt $BOLD
-    # )
-    TRS=1800
-    echo -e "stim_file_index\tonset\tduration\tstim_file" > ./events.tsv
-    seq 1 $TRS | xargs -I{} echo -e "{}\t\t\t" >> ./events.tsv
-fi
+CMD="time singularity run -e docker://anibalsolon/bl-app-prfmodel:v0.0.1"
 
-EVENTS=./events.tsv
-awk \
-    -v stim_file=../sub-${SUB}/ses-${SES}/func/sub-${SUB}_ses-${SES}_task-prf_acq-normal_run-1_bold.${BOLD_EXT} \
-    -f tsv.awk \
-    $EVENTS > $EVENTS_FILE
+$CMD \
+3dDeconvolve -nodata 18 1.5 -polort -1 \
+    -num_stimts 1 -stim_times 1 '1D:0' SPMG1 \
+    -x1D output/conv.ref.spmg1.1D
 
-INPUT_CONFIG="[]"
-for i in $(seq 1 $TRS)
-do
-    INPUT_CONFIG=$(echo $INPUT_CONFIG | jq '. + [{"TR": 1.0, "Stimulus": {"fieldofviewHorz": 200,"fieldofviewVert": 200}}]')
-done
-# echo $INPUT_CONFIG > input/config.json
-# {
-#     "subjectName": "${SUB}",
-#     "sessionName": "${SES}",
-#     "solver":      "vista",
-#     "isPRFSynthData": false,
-#     "options": {
-#         "model":    "one gaussian",
-#         "wsearch":  "coarse to fine",
-#         "detrend":  1,
-#         "grid":     false,
-#         "keepAllPoints": true
-#     },
-#     "stimulus": {
-#         "fieldofviewHorz": 200,
-#         "fieldofviewVert": 200,
-#     }
-# }
+$CMD \
+3dTstat -mean -prefix output/bold_mean.nii.gz $BOLD
 
-cat << EOF > input/config.json
-{
-    "subjectName": "${SUB}",
-    "sessionName": "${SES}",
-    "solver":      "vista",
-    "isPRFSynthData": false,
-    "options": {
-        "model":    "one gaussian",
-        "wsearch":  "coarse to fine",
-        "detrend":  1,
-        "grid":     false,
-        "keepAllPoints": true
-    },
-    "stimulus": {
-      "stimuli": ${INPUT_CONFIG}
-    }
-}
-EOF
+$CMD \
+3dAutomask -prefix output/bold_automask.nii.gz $BOLD
 
-rm -Rf prf output
-mkdir -p output running
+$CMD \
+3dcalc -a $BOLD -b output/bold_mean.nii.gz -c output/bold_automask.nii.gz \
+    -expr '100*c*(a-b)' -prefix output/bold_demean.nii.gz
 
-time singularity run -e \
-    -B `pwd`/input:/flywheel/v0/input \
-    -B `pwd`/output:/flywheel/v0/output \
-    -B `pwd`/running:/running \
-    -B `pwd`/run.py:/scripts/run_popeye.py \
-    docker://garikoitz/prfanalyze-popeye:latest \
-    --verbose
+export AFNI_CONVMODEL_REF=output/conv.ref.spmg1.1D
+export AFNI_MODEL_PRF_STIM_DSET=$STIM
+export AFNI_MODEL_PRF_ON_GRID=YES
+export AFNI_MODEL_DEBUG=2
 
-# TODO map outputs
-# mkdir prf
-# mv output/BIDS/derivatives/prfanalyze-*/sub-${SUB}/ses-${SES}/*_r2.nii.gz prf/r2.nii.gz
-# r2.nii.gz
-# polarAngle.nii.gz
-# eccentricity.nii.gz
-# rfWidth.nii.gz
-# varea.nii.gz
+$CMD \
+3dNLfim -input output/bold_demean.nii.gz \
+  -mask output/bold_automask.nii.gz \
+  -noise Zero \
+  -signal Conv_PRF \
+  -sconstr 0 -10.0 10.0 \
+  -sconstr 1 -1.0 1.0 \
+  -sconstr 2 -1.0 1.0 \
+  -sconstr 3 0.0 1.0 \
+  -SIMPLEX \
+  -nrand 10000 \
+  -nbest 5 \
+  -bucket 0 output/Buck.PRF.nii.gz \
+  -snfit output/snfit.PRF.nii.gz \
+  -jobs $CPUS
+
+$CMD \
+3dcalc -a output/Buck.PRF.nii.gz'[1]' -b output/Buck.PRF.nii.gz'[2]' -expr 'sqrt(a^2+b^2)' -prefix output/polor.mag.nii.gz
+
+$CMD \
+3dcalc -a output/Buck.PRF.nii.gz'[1]' -b output/Buck.PRF.nii.gz'[2]' -expr 'atan2(-b,a)' -prefix output/polor.phase.nii.gz
