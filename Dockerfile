@@ -6,7 +6,37 @@ RUN apt-get update && \
 
 RUN curl -O https://afni.nimh.nih.gov/pub/dist/bin/linux_openmp_64/@update.afni.binaries && \
     tcsh @update.afni.binaries -package linux_openmp_64 -bindir /opt/afni -prog_list \
-    3dDeconvolve 3dTstat 3dAutomask 3dcalc 3dNLfim 3dcalc
+    3dDeconvolve 3dTstat 3dAutomask 3dcalc 3dNLfim 3dcalc \
+    model_sinewave_ap.so \
+    model_diffexp.so \
+    model_conv_PRF_DOG.so \
+    model_conv_diffgamma.so \
+    model_gammavar.so \
+    model_zero.so \
+    model_expMEMRI.so \
+    model_conv_PRF_6_BAD.so \
+    model_squarewave_apf.so \
+    model_expMEMRI3.so \
+    model_conv_cosine4.so \
+    model_conv_PRF_6.so \
+    model_demri_3.so \
+    model_linplusort.so \
+    model_squarewave_ap.so \
+    model_diffusion.so \
+    model_constant.so \
+    model_convgamma.so \
+    model_trnglwave_apf.so \
+    model_beta.so \
+    model_trnglwave_ap.so \
+    model_sinewave_apf.so \
+    model_conv_PRF.so \
+    model_convgamma2a.so \
+    model_null.so \
+    model_linear.so \
+    model_expr2.so \
+    model_exp.so \
+    model_michaelis_menton.so \
+    model_quadratic.so
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \

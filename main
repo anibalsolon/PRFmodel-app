@@ -19,8 +19,7 @@ rm -Rf output
 mkdir output
 
 CPUS=$(grep 'cpu cores' /proc/cpuinfo | uniq | sed -re 's/cpu cores\s*:\s*([0-9]+)/\1/')
-
-CMD="time singularity run -e docker://anibalsolon/bl-app-prfmodel:v0.0.1"
+CMD="time singularity run docker://anibalsolon/bl-app-prfmodel:v0.0.1"
 
 $CMD \
 3dDeconvolve -nodata 18 1.5 -polort -1 \
